@@ -1,16 +1,19 @@
 #ifndef SIMPLEPROFILER_H
 #define SIMPLEPROFILER_H
 
+#include <string>
 #include <chrono>
 #include <vector>
 #include <map>
+#include <tuple>
 
 #define profile() Timer timer(__FUNCTION__)
-#define profile_info Timer::get_profile_info()
+#define profile_summary Timer::get_profile_summary()
+#define profile_details Timer::get_profile_details()
 
 struct Timer
 {
-    static std::map<std::string, std::vector<double>> mp;
+    static std::map<std::string, std::pair<double, std::vector<double>>> summary_map;
 
     std::chrono::high_resolution_clock::time_point start;
     std::chrono::high_resolution_clock::time_point stop;
@@ -29,19 +32,45 @@ struct Timer
         duration = std::chrono::duration_cast<std::chrono::duration<double>>(stop - start);
 
         double time_span = duration.count()*1e3;
-        mp[function_name].push_back(time_span);
+        summary_map[function_name].first += time_span;
+        summary_map[function_name].second.push_back(time_span);
     }
 
-    static std::string get_profile_info()
+    static void reset() { summary_map.clear(); }
+
+    static std::string get_profile_summary()
     {
         std::string str;
-        for(auto& [key, value]: mp)
-            str.append(key).append(": ").append(std::to_string(value[0]));
+        for(auto& [key, value]: summary_map)
+        {
+            str.append(key).append(": called ")
+                .append(std::to_string(value.second.size()) + " times with overall duration of ")
+                .append(std::to_string(value.first) + " us\n");
+        }
+
+        return str;
+    }
+
+    static std::string get_profile_details()
+    {
+        std::string str;
+        for(auto& [key, value]: summary_map)
+        {
+            str.append(key).append(": called ")
+                .append(std::to_string(value.second.size()) + " times with overall duration of ")
+                .append(std::to_string(value.first) + " us\n");
+
+            for(size_t i = 0; i<value.second.size(); i++)
+                str.append(" " + std::to_string(i+1))
+                    .append(":\t" + std::to_string(value.second[i]))
+                    .append(" us\n");
+            str.append("\n");
+        }
 
         return str;
     }
 };
 
-std::map<std::string, std::vector<double>> Timer::mp = {};
+std::map<std::string, std::pair<double, std::vector<double>>> Timer::summary_map = {};
 
 #endif
