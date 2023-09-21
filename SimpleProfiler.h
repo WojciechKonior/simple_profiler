@@ -11,14 +11,17 @@
 #define profile_summary Timer::get_profile_summary()
 #define profile_details Timer::get_profile_details()
 
-struct Timer
+class Timer
 {
-    static std::map<std::string, std::pair<double, std::vector<double>>> summary_map;
-
+private:
     std::chrono::high_resolution_clock::time_point start;
     std::chrono::high_resolution_clock::time_point stop;
     std::chrono::duration<double> duration;
     std::string function_name;
+    
+    static std::map<std::string, std::pair<double, std::vector<double>>> summary_map;
+
+public:
 
     Timer() = delete;
     Timer(const std::string& func)
@@ -68,6 +71,11 @@ struct Timer
         }
 
         return str;
+    }
+
+    static std::map<std::string, std::pair<double, std::vector<double>>>& get_summary_map()
+    {
+        return summary_map;
     }
 };
 
